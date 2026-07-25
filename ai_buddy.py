@@ -37,7 +37,7 @@ if prompt := st.chat_input("Nenu emi cheyyali?"):
                 messages=[
                     {"role": "system", "content": "You are a helpful AI Buddy. Reply in Telugu if user writes in Telugu."}
                 ] + st.session_state.messages,
-                model="llama3-8b-8192",
+                model="llama-3.1-8b-instant",
             )
             response = chat_completion.choices[0].message.content
             st.markdown(response)
