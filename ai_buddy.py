@@ -35,7 +35,7 @@ if prompt := st.chat_input("Nenu emi cheyyali?"):
         with st.spinner("Aloc histhunna..."):
             chat_completion = client.chat.completions.create(
                 messages=[
-                    {"role": "system", "content": "You are a helpful AI Buddy. Reply in Telugu if user writes in Telugu."}
+                    {"role": "system", "content": "You are a helpful AI Buddy. Reply in English if user writes in Telugu."}
                 ] + st.session_state.messages,
                 model="llama-3.1-8b-instant",
             )
