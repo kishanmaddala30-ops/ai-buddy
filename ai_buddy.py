@@ -1,26 +1,31 @@
 import streamlit as st
-from PIL import Image
 
-st.set_page_config(page_title="AI Buddy", page_icon="🤖")
+st.set_page_config(page_title="AI Buddy", page_icon="🤖", layout="centered")
 st.title("🤖 AI Buddy")
+st.write("Emaina adugu, nenu reply istha 😊")
 
-st.write("Voice, Camera, Photo Upload anni try chey")
+# Chat history kosam
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.write("🎤 Mic - coming soon")
-with col2:
-    camera_photo = st.camera_input("📷 Camera")
-with col3:
-    uploaded_file = st.file_uploader("📎 Upload", type=["jpg", "png"])
+# Purana messages chupinchadam
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
+# User input
 prompt = st.chat_input("Nenu emi cheyyali?")
 
 if prompt:
-    st.chat_message("user").write(prompt)
-    st.chat_message("assistant").write("Nenu vinnanu bro! 😊")
+    # User message save
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-if camera_photo:
-    st.image(camera_photo, caption="Camera photo")
-if uploaded_file:
-    st.image(uploaded_file, caption="Uploaded photo")
+    # AI reply - Simple ga
+    with st.chat_message("assistant"):
+        reply = f"Nuv annavu: '{prompt}' \nNenu help chestha bro! Inkemaina kavala? 😊"
+        st.markdown(reply)
+    
+    # AI reply save
+    st.session_state.messages.append({"role": "assistant", "content": reply})
