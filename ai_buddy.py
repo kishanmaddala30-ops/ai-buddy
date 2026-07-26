@@ -37,7 +37,7 @@ if api_key:
                         messages=[
                             {"role": "system", "content": "You are AI Buddy. Always reply in English language in a friendly way."}
                         ] + st.session_state.messages,
-                        model="llama3-8b-8192", # Idi free and best model
+                        model="llama-3.1-8b-instant", # Idi free and best model
                         temperature=0.7,
                         max_tokens=1024,
                     )
