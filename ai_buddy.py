@@ -42,7 +42,7 @@ if prompt := st.chat_input("Nenu emi cheyyali?"):
             try:
                 chat_completion = client.chat.completions.create(
                     messages=[
-                        {"role": "system", "content": "You are AI Buddy. Always reply in friendly Telugu. Use emojis and be helpful."}
+                        {"role": "system", "content": "You are AI Buddy. Always reply in friendly English. Use emojis and be helpful."}
                     ] + st.session_state.messages,
                     model="llama-3.1-8b-instant", # Fastest free model
                     temperature=0.7,
