@@ -22,10 +22,28 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # AI reply - Simple ga
+    # AI reply - Smart replies
     with st.chat_message("assistant"):
-        reply = f"Nuv annavu: '{prompt}' \nNenu help chestha bro! Inkemaina kavala? 😊"
+        prompt_lower = prompt.lower()
+        
+        if "world war 2" in prompt_lower or "ww2" in prompt_lower:
+            reply = """**World War 2 gurinchi chinnaga** 👇
+
+**Start**: 1939 September 1 - Germany Poland meeda attack chesindi
+**End**: 1945 September 2 - Japan surrender chesindi
+**Main Countries**: Allies - USA, UK, USSR | Axis - Germany, Japan, Italy
+**Result**: 70 million mandhi chanipoyaru. USA atomic bomb drop chesindi Hiroshima, Nagasaki lo.
+
+Inka detail kavala bro? Specific ga emi telusukovali?"""
+        
+        elif "java" in prompt_lower:
+            reply = "Java code kavala? Topic cheppu bro. Eg: calculator, factorial, pattern"
+        
+        else:
+            reply = f"Nuv '{prompt}' gurinchi adigavu. Nenu help chestha bro! Inka detail ga cheppana? 😊"
+            
         st.markdown(reply)
     
     # AI reply save
     st.session_state.messages.append({"role": "assistant", "content": reply})
+  
