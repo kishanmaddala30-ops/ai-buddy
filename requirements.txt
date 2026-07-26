@@ -2,3 +2,4 @@
     groq
     streamlit-mic-recorder
     pillow
+    rembg==2.0.50
