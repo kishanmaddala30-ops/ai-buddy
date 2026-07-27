@@ -1,57 +1,51 @@
 import streamlit as st
-from groq import Groq
+from groq import Groq # or openai, google.generativeai
 
-st.set_page_config(page_title="AI Buddy", page_icon="🤖", layout="centered")
+st.set_page_config(page_title="AI BUDDY", page_icon="🤖")
 
-st.title("🤖 AI Buddy")
+st.title("AI BUDDY 🤖")
 st.caption("Nenu nee personal ChatGPT 😎 Telugu lo matladtha")
+st.write("**Created & Developed by: MADDALA SAI NARASING KISHAN**")
+st.divider()
 
-# 1. Secret nunchi Key teeskovadam
-try:
-    api_key = st.secrets["GROQ_API_KEY"]
-    client = Groq(api_key=api_key)
-except KeyError:
-    st.error("🚨 GROQ_API_KEY set cheyyaledu bro")
-    st.info("Streamlit Settings > Secrets lo `GROQ_API_KEY = \"gsk_...\"` ani pettu")
-    st.stop()
-except Exception as e:
-    st.error(f"Groq connect avvaledu: {e}")
-    st.stop()
+# 1. SYSTEM PROMPT - IDHE FORCE CHESTHUNDI
+SYSTEM_PROMPT = """You are AI BUDDY.
+You were created and developed by MADDALA SAI NARASING KISHAN.
+You must always reply in friendly Telugu + English mix.
+If anyone asks "who created you", "who invented you", "who made you":
+You MUST reply: "Nenu AI Buddy ni 😊 Nannu MADDALA SAI NARASING KISHAN bro develop chesaru!"
+Never say Meta, Google, OpenAI."""
 
-# 2. Chat History
+# 2. GROQ API SETUP - FREE + FAST
+client = Groq(api_key="GROQ_API_KEY_IKKADA_PETTU") # groq.com lo free key
+
 if "messages" not in st.session_state:
-    st.session_state.messages = []
-    # First message
-    st.session_state.messages.append({"role": "assistant", "content": "Hii bro! Nenu AI Buddy ni 😄 Em help kavali?"})
+    st.session_state.messages = [{"role": "assistant", "content": "Hii bro! Nenu AI Buddy ni 😊 Em help kavali?"}]
 
-# 3. Previous messages chupinchadam
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 4. New message input
 if prompt := st.chat_input("Nenu emi cheyyali?"):
-    # User message ni save cheyi
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 5. AI Reply
     with st.chat_message("assistant"):
-        with st.spinner("Alocisthunnanu..."):
-            try:
-                chat_completion = client.chat.completions.create(
-                    messages=[
-                        {"role": "system", "content": "You are AI Buddy. Always reply in friendly English. Use emojis and be helpful."}
-                    ] + st.session_state.messages,
-                    model="llama-3.1-8b-instant", # Fastest free model
-                    temperature=0.7,
-                    max_tokens=1024,
-                )
-                reply = chat_completion.choices[0].message.content
-                st.markdown(reply)
-                st.session_state.messages.append({"role": "assistant", "content": reply})
+        with st.spinner("Alochisthunna..."):
+            # 3. IMPORTANT: SYSTEM PROMPT NI FIRST LO PAMPALI
+            messages_for_api = [{"role": "system", "content": SYSTEM_PROMPT}]
+            messages_for_api.extend(st.session_state.messages)
 
-            except Exception as e:
-                st.error(f"Error vachindi: {e}")
-                st.error("API Key expire ayyundochu. Kothadi create cheyi")
+            completion = client.chat.completions.create(
+                model="llama-3.1-70b-versatile",
+                messages=messages_for_api,
+                temperature=0.3, # Low pettadam valla prompt ni follow chesthundi
+            )
+            response = completion.choices[0].message.content
+            st.markdown(response)
+
+    st.session_state.messages.append({"role": "assistant", "content": response})
+
+st.divider()
+st.markdown("**Created & Developed by: MADDALA SAI NARASING KISHAN**")
