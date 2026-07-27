@@ -14,8 +14,7 @@ st.set_page_config(
 )
 
 # 3. API Key - Streamlit Secrets lo petuko lekapothe direct ikkada
-API_KEY = "gsk_your_key_here" # <<<<< NEE GROQ KEY IKKADA PETTU
-
+    API_KEY = st.secrets["GROQ_API_KEY"]
 client = Groq(api_key=API_KEY)
 
 # 4. FULL CHATGPT STYLE SYSTEM PROMPT
