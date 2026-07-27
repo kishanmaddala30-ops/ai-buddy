@@ -86,7 +86,7 @@ if st.button("Cheppu Buddy ✨", type="primary"):
 
             try:
                 chat_completion = client.chat.completions.create(
-                    model="llama-3.1-70b-versatile",
+                    model="llama-3.3-70b-versatile",
                     messages=messages_for_api,
                     temperature=0.2,
                     max_tokens=2000,
