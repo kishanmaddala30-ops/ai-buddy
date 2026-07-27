@@ -1,21 +1,10 @@
 import streamlit as st
-from groq import Groq
 
 st.set_page_config(page_title="AI BUDDY", page_icon="🤖")
 st.title("AI BUDDY 🤖")
 st.caption("Your Personal AI Assistant")
 st.write("**Created & Developed by: MADDALA SAI NARASING KISHAN**")
 st.divider()
-
-# 1. GROQ API KEY - IKKADA NEE KEY PETTU
-GROQ_API_KEY = "gsk_xxxxxxxxxxxxxxxxxxxxxxxx" # <--- NEE KEY IKKADA
-client = Groq(api_key=GROQ_API_KEY)
-
-SYSTEM_PROMPT = """You are AI BUDDY.
-You were created and developed by MADDALA SAI NARASING KISHAN.
-Always reply in English. Be helpful and friendly.
-If anyone asks "who created you" reply: "I am AI BUDDY. I was created and developed by MADDALA SAI NARASING KISHAN."
-"""
 
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "Hello! I am AI Buddy 😊 How can I help you today?"}]
@@ -30,23 +19,9 @@ if prompt := st.chat_input("Ask me anything..."):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            try:
-                # SEND TO GROQ
-                messages_for_api = [{"role": "system", "content": SYSTEM_PROMPT}]
-                messages_for_api.extend(st.session_state.messages)
-
-                completion = client.chat.completions.create(
-                    model="llama-3.1-70b-versatile",
-                    messages=messages_for_api,
-                    temperature=0.7,
-                )
-                response = completion.choices[0].message.content
-
-            except Exception as e:
-                response = f"Error: {e}. Please check your API key bro."
-
-            st.markdown(response)
+        # DUMMY RESPONSE - CRASH AVVADHU
+        response = f"AI Buddy here! You said: '{prompt}'\n\nI am still learning bro 😅"
+        st.markdown(response)
 
     st.session_state.messages.append({"role": "assistant", "content": response})
 
