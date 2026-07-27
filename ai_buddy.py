@@ -2,67 +2,76 @@ import streamlit as st
 from groq import Groq
 from datetime import datetime
 
-# 1. NEE DETAILS
-USER_NAME = "Nandhu" # <<<<< IKKADA NEE PERU
-DEVELOPER_NAME = "MADDALA SAI NARASING KISHAN" # <<<<< IKKADA NEE PERU
+# ============================================
+# 1. NEE DETAILS - IKKADA MARCHU
+# ============================================
+USER_NAME = "SAI" # <<<<< NEE PERU
+DEVELOPER_NAME = "MADDALA SAI NARASING KISHAN" # <<<<< NEE PERU
 
-# 2. Page Config
+# ============================================
+# 2. API KEY SETUP - 2 OPTIONS UNNAY
+# ============================================
+# OPTION A: Streamlit Cloud kosam - Secrets use chey
+API_KEY = st.secrets["GROQ_API_KEY"]
+
+# OPTION B: Local lo test cheyadaniki - Direct key
+# API_KEY = "gsk_your_key_here" # <<<<< Idhi use chesthe paina line ni # pettu
+
+client = Groq(api_key=API_KEY)
+
+# ============================================
+# 3. PAGE SETUP
+# ============================================
 st.set_page_config(
     page_title=f"AI BUDDY by {DEVELOPER_NAME}",
     page_icon="🤖",
     layout="centered"
 )
 
-# 3. API Key - Streamlit Secrets lo petuko lekapothe direct ikkada
-    API_KEY = st.secrets["GROQ_API_KEY"]
-client = Groq(api_key=API_KEY)
-
-# 4. FULL CHATGPT STYLE SYSTEM PROMPT
+# ============================================
+# 4. FULL CHATGPT STYLE PROMPT
+# ============================================
 SYSTEM_PROMPT = f"""You are AI BUDDY, created and developed by {DEVELOPER_NAME}.
 You answer exactly like ChatGPT - detailed, structured, and scoring.
 
 CORE INSTRUCTIONS:
-1. TONE: Friendly professor. Start with "Sare {USER_NAME}" if user writes in Telugu/English mix. Be helpful, clear.
+1. TONE: Friendly professor. Start with "Sare {USER_NAME}" if user writes in Telugu/English mix.
 2. STRUCTURE: Always use headings, bold, bullet points, and code blocks.
 
-3. IF EXAM QUESTION DETECTED: "X Marks" ani unte
-   **Length Rule**: 2 Marks = 80-100 words, 4 Marks = 150-200 words, 6 Marks = 300-400 words
-   **Format MUST be**:
+3. IF EXAM QUESTION: "X Marks" unte
+   **Length Rule**: 2 Marks=100 words, 4 Marks=200 words, 6 Marks=350 words
+   **Format**:
    **1. Definition**
-   2-3 lines clear definition
-
-   **2. Explanation / Working**
-   4-6 bullet points step by step
-
-   **3. Example / Diagram / RTL**
-   Give real example. For COA: R2 ← R1 + R3
-
+   **2. Explanation / Working - 5 points**
+   **3. Example / RTL**
    **4. Advantages / Applications**
-   3-4 points
-
    **5. Exam Tip for Full Marks**
-   "Diagram vesthe + Keywords highlight chesthe 100% marks vastay"
 
-4. IF NORMAL DOUBT: Explain like a senior teaching a junior. Give example + code if needed.
+4. IF NORMAL DOUBT: Senior la simple ga explain chey with example.
+5. LANGUAGE: User language lone answer ivvu.
+6. Be accurate and detailed.
+"""
 
-5. LANGUAGE: User em language lo adigithe aa language lo ne answer ivvu.
-
-6. QUALITY: Be accurate. Now answer the following question in full detail:"""
-
+# ============================================
 # 5. HEADER
+# ============================================
 st.title(f"🤖 AI BUDDY")
 st.subheader(f"Welcome {USER_NAME}! 👋")
-st.caption("1st Class nunchi B.Tech + Normal Doubts - ChatGPT Style Answers")
+st.caption("1st Class nunchi B.Tech + Normal Doubts - ChatGPT Style")
 st.markdown("---")
 
-# 6. INPUT
+# ============================================
+# 6. INPUT BOX
+# ============================================
 user_input = st.text_area(
     f"{USER_NAME}, em doubt unna adugu:",
     placeholder="Examples:\n1. Explain RTL 6 Marks\n2. Photosynthesis 4 Marks\n3. What is Python?",
     height=150
 )
 
-# 7. BUTTON + LOGIC
+# ============================================
+# 7. BUTTON LOGIC
+# ============================================
 if st.button("Cheppu Buddy ✨", type="primary"):
 
     if user_input.strip() == "":
@@ -76,12 +85,11 @@ if st.button("Cheppu Buddy ✨", type="primary"):
             ]
 
             try:
-                # 8. CHATGPT STYLE MODEL SETTINGS
                 chat_completion = client.chat.completions.create(
-                    model="llama-3.1-70b-versatile", # 70b = long detailed answers
+                    model="llama-3.1-70b-versatile",
                     messages=messages_for_api,
-                    temperature=0.2, # Facts kosam low
-                    max_tokens=2000, # Long answer kosam
+                    temperature=0.2,
+                    max_tokens=2000,
                 )
                 answer = chat_completion.choices[0].message.content
 
@@ -91,7 +99,9 @@ if st.button("Cheppu Buddy ✨", type="primary"):
             except Exception as e:
                 st.error(f"Error: {e}")
 
-# 9. FOOTER - DEVELOPER CREDIT
+# ============================================
+# 8. FOOTER
+# ============================================
 st.markdown("---")
 year = datetime.now().year
 st.markdown(
@@ -102,4 +112,4 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.info(f"💡 Pro Tip: {USER_NAME}, '6 Marks' ani rasi adigithe 300+ words vastundi")
+st.info(f"💡 Pro Tip: {USER_NAME}, '6 Marks' ani rasi adigithe 350+ words vastundi")
