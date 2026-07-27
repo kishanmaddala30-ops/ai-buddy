@@ -31,7 +31,7 @@ if prompt := st.chat_input("Ask me anything..."):
                 messages_for_api.extend(st.session_state.messages)
 
                 chat_completion = client.chat.completions.create(
-                    model="llama-3.1-70b-versatile",
+                    model="llama-3.1-8b-versatile",
                     messages=messages_for_api,
                 )
                 response = chat_completion.choices[0].message.content
