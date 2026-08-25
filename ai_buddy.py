@@ -13,10 +13,7 @@ def init_db():
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS chats
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  title TEXT,
-                  mode TEXT,
-                  messages TEXT,
-                  date TEXT)''')
+                  title TEXT, mode TEXT, messages TEXT, date TEXT)''')
     conn.commit()
     conn.close()
 
@@ -41,19 +38,33 @@ init_db()
 # --- CSS ---
 st.markdown("""
 <style>
- .stApp { background-color: #0A0A0B; color: #E5E5E5; }
+.stApp { background-color: #0A0A0B; color: #E5E5E5; }
   [data-testid="stSidebar"] { background-color: #111113; border-right: 1px solid #222; }
- .user-bubble { background: #2A4B8D; padding: 12px 18px; border-radius: 20px 20px 4px 20px; margin: 10px 0 10px 40px; text-align: left; }
- .bot-bubble { background: #1C1C1E; padding: 16px 18px; border-radius: 20px 20px 20px 4px; margin: 10px 40px 10px 0; border: 1px solid #2A2A2E; line-height: 1.6; }
- .story-box { background: #1C1C1E; border: 1px solid #3A5A8A; padding: 20px; border-radius: 16px; }
+.user-bubble { background: #2A4B8D; padding: 12px 18px; border-radius: 20px 20px 4px 20px; margin: 10px 0 10px 40px; }
+.bot-bubble { background: #1C1C1E; padding: 16px 18px; border-radius: 20px 20px 20px 4px; margin: 10px 40px 10px 0; border: 1px solid #2A2A2E; line-height: 1.6; }
+.story-box { background: #1C1C1E; border: 1px solid #3A5A8A; padding: 20px; border-radius: 16px; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- GROQ CONFIG - FIXED ---
-# Get free key from https://console.groq.com/keys
-GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "YOUR_GROQ_API_KEY_HERE")
-MODEL = "llama-3.1-8b-instant"
+# --- GROQ CONFIG ---
+# 1. Go to https://console.groq.com/keys -> Create New Key
+# 2. Add it in Streamlit Secrets as GROQ_API_KEY
+try:
+    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+except:
+    GROQ_API_KEY = "YOUR_NEW_GROQ_API_KEY_HERE"
+
 client = Groq(api_key=GROQ_API_KEY)
+
+# Auto fallback models - current working list Aug 2026
+WORKING_MODELS = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-120b",
+    "qwen/qwen3-32b",
+    "meta-llama/llama-4-scout-17b-16e-instruct"
+]
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -94,41 +105,33 @@ with st.sidebar:
     st.markdown("**Rahul** \nCSE • VNR VJIET • Sem 4")
     st.caption("🔥 4-day streak")
 
-# --- SYSTEM PROMPTS - FIXED (NO SYNTAX ERROR) ---
+# --- SYSTEM PROMPTS ---
 if "Study" in selected_mode:
-    system_prompt = (
-        "You are AI BUDDY Study Mode. Explain complex topics simply. "
-        "Use bullet points and give exam tips. "
-        "Structure: 1. Definition - 2 marks, 2. Explanation / Working - 5 points, 3. Example, 4. Exam Tip. "
-        "Be concise like ChatGPT."
-    )
+    system_prompt = "You are AI BUDDY Study Mode. Explain complex topics simply. Use bullet points and give exam tips. Be concise like ChatGPT."
 elif "Code" in selected_mode:
-    system_prompt = (
-        "You are Code Buddy. You are an expert Python developer. "
-        "Give clean code, explain time complexity, and give optimized solution. "
-        "Structure: Explanation, Code, Complexity."
-    )
+    system_prompt = "You are Code Buddy. Expert Python developer. Give clean code, explain complexity."
 else:
-    system_prompt = (
-        "You are Interview Buddy. Ask mock interview questions and give feedback. "
-        "Be friendly and supportive."
-    )
+    system_prompt = "You are Interview Buddy. Ask mock interview questions and give feedback."
 
 # --- STORY MODE ---
 if st.session_state.get("show_story", False):
     st.markdown("### 📖 Your Learning Story")
-    st.caption("AI creates a story from your chat history")
-
     if len(st.session_state.get("messages", [])) <= 1:
         st.warning("Chat a bit more to create a story!")
     else:
         with st.spinner("Writing your story..."):
             try:
                 all_chat_text = str(st.session_state.messages[-8:])
-                completion = client.chat.completions.create(
-                    model=MODEL,
-                    messages=[{"role": "user", "content": f"Convert this learning chat into a short inspiring story with Title, 3 paragraphs, and 3 takeaways: {all_chat_text}"}]
-                )
+                completion = None
+                for m in WORKING_MODELS:
+                    try:
+                        completion = client.chat.completions.create(
+                            model=m,
+                            messages=[{"role": "user", "content": f"Convert this learning chat into a short inspiring story with Title, 3 paragraphs, and 3 takeaways: {all_chat_text}"}]
+                        )
+                        break
+                    except:
+                        continue
                 story = completion.choices[0].message.content
                 st.markdown(f'<div class="story-box">{story}</div>', unsafe_allow_html=True)
                 if st.button("Save this Story"):
@@ -180,24 +183,33 @@ else:
 
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
-        try:
-            with st.spinner("Thinking..."):
-                completion = client.chat.completions.create(
-                    model=MODEL,
-                    messages=[{"role": "system", "content": system_prompt}] + st.session_state.messages[-8:],
-                    temperature=0.6,
-                    max_tokens=1200,
-                )
-                response = completion.choices[0].message.content
 
+        # --- FIXED GROQ CALL WITH FALLBACK ---
+        response = None
+        last_error = None
+        with st.spinner("Thinking..."):
+            for try_model in WORKING_MODELS:
+                try:
+                    completion = client.chat.completions.create(
+                        model=try_model,
+                        messages=[{"role": "system", "content": system_prompt}] + st.session_state.messages[-8:],
+                        temperature=0.6,
+                        max_tokens=1200,
+                    )
+                    response = completion.choices[0].message.content
+                    st.toast(f"Answered with {try_model}")
+                    break
+                except Exception as e:
+                    last_error = e
+                    continue
+
+        if response:
             st.session_state.messages.append({"role": "assistant", "content": response})
-
             if len(st.session_state.messages) == 3:
                 save_chat(st.session_state.messages[1]["content"][:35], selected_mode, st.session_state.messages)
-
             st.rerun()
-        except Exception as e:
-            st.error(f"API Error: {e}")
-            st.info(f"Check your Groq API key. Model must be {MODEL}")
+        else:
+            st.error(f"All models failed. Error: {last_error}")
+            st.info("Go to https://console.groq.com/keys -> Create NEW API Key -> Add to Streamlit Secrets")
 
     st.caption("AI BUDDY can make mistakes. Check important details. • 12 credits left")
