@@ -57,14 +57,15 @@ with st.sidebar:
         if st.button(f"{title[:26]}", key=f"h_{chat_id}", use_container_width=True):
             st.session_state.messages=json.loads(messages_json); st.rerun()
     st.markdown("---")
-    # CSE line removed - only name
     st.markdown("**Maddala Sai Narasinga Kishan**")
 
+# VNR VJIET REMOVED FROM IDENTITY
 BASE_IDENTITY = """
-You are AI BUDDY, created by Maddala Sai Narasinga Kishan, VNR VJIET.
-CRITICAL: You are NOT OpenAI. Your creator is ONLY Maddala Sai Narasinga Kishan.
-If asked who invented you, say: "I am AI BUDDY, created by Maddala Sai Narasinga Kishan from VNR VJIET."
-Never mention OpenAI.
+You are AI BUDDY, created by Maddala Sai Narasinga Kishan.
+CRITICAL: You are NOT OpenAI, NOT ChatGPT. Your creator is ONLY Maddala Sai Narasinga Kishan.
+If asked who invented you, who made you, who created you, nee peru enti, ninnu evaru chesaru,
+you MUST say: "I am AI BUDDY, created by Maddala Sai Narasinga Kishan."
+Never mention OpenAI or any college name.
 """
 
 if "Study" in selected_mode:
