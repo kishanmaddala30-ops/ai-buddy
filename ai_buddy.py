@@ -103,7 +103,7 @@ if prompt := st.chat_input("Ask your doubt here..."):
     with st.chat_message("assistant"):
         with st.spinner("AI BUDDY is thinking..."):
             completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama-3.1-8b-instant",
                 messages=[{"role": "system", "content": system_prompt}] + [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
             )
             response = completion.choices[0].message.content
