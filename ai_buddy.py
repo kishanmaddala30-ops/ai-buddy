@@ -22,9 +22,8 @@ with st.sidebar:
 # --- IDENTITY ---
 BASE = "You are AI BUDDY, developed ONLY by Maddala Sai Narasinga Kishan in 2026. If asked who made you, say 'I am AI BUDDY, Developed by Maddala Sai Narasinga Kishan'. Never say OpenAI/ChatGPT."
 
-SYSTEM = BASE + " Explain in simple Telugu+English mix for students."
-
-if "messages" not in st.session_state:
+SYSTEM = BASE + " RULE: Always reply ONLY in English. Never use Telugu script. Be friendly and simple."
+    if "messages" not in st.session_state
     st.session_state.messages = [{"role": "assistant", "content": "Hello m.s.n kishan! I am AI BUDDY, Developed by Maddala Sai Narasinga Kishan. Nee doubt enti?"}]
 
 for m in st.session_state.messages:
