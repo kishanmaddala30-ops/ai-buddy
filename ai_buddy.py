@@ -1,123 +1,112 @@
 import streamlit as st
+import sqlite3
 from groq import Groq
-import sqlite3, json
 from datetime import datetime
-import base64
 
-st.set_page_config(page_title="AI BUDDY", page_icon="🤖", layout="wide")
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="AI BUDDY - by Kishan", page_icon="🤖", layout="wide")
 
-def init_db():
-    conn = sqlite3.connect('ai_buddy.db', check_same_thread=False)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, mode TEXT, messages TEXT, date TEXT)''')
-    conn.commit(); conn.close()
-def save_chat(title, mode, messages):
-    conn = sqlite3.connect('ai_buddy.db', check_same_thread=False)
-    c = conn.cursor()
-    c.execute("INSERT INTO chats VALUES (NULL,?,?,?,?)",(title, mode, json.dumps(messages), datetime.now().strftime("%d %b %I:%M %p")))
-    conn.commit(); conn.close()
-def load_chats():
-    conn = sqlite3.connect('ai_buddy.db', check_same_thread=False)
-    c = conn.cursor()
-    c.execute("SELECT id, title, mode, date, messages FROM chats ORDER BY id DESC")
-    rows = c.fetchall(); conn.close(); return rows
-init_db()
+# --- DATABASE FOR HISTORY ---
+conn = sqlite3.connect('buddy.db', check_same_thread=False)
+conn.execute('CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, user_name TEXT, role TEXT, content TEXT, time TEXT)')
+conn.commit()
 
-st.markdown("""
-<style>
-.stApp { background-color: #0A0A0B; color: #E5E5E5; }
-[data-testid="stSidebar"] { background-color: #111113; border-right: 1px solid #222; }
-.user-bubble { background: #2A4B8D; padding: 12px 18px; border-radius: 20px 20px 4px 20px; margin: 10px 0 10px 40px; }
-.bot-bubble { background: #1C1C1E; padding: 16px 18px; border-radius: 20px 20px 20px 4px; margin: 10px 40px 10px 0; border: 1px solid #2A2A2E; line-height: 1.6; }
-</style>
-""", unsafe_allow_html=True)
+# --- GROQ CLIENT ---
+# Streamlit Cloud -> Settings -> Secrets lo GROQ_API_KEY add cheyali
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-try: GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
-except: GROQ_API_KEY = "YOUR_KEY_HERE"
-client = Groq(api_key=GROQ_API_KEY)
-WORKING_MODELS = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "openai/gpt-oss-20b", "qwen/qwen3-32b"]
-VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+# --- 1. LOGIN SYSTEM (STARTUP READY) ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 
+if not st.session_state.logged_in:
+    st.markdown("<h1 style='text-align:center'>🤖 AI BUDDY</h1><h4 style='text-align:center'>Developed by Maddala Sai Narasinga Kishan | 2026</h4>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        st.subheader("🔐 Login to Continue")
+        name = st.text_input("Your Full Name")
+        email = st.text_input("College Email / Gmail")
+        if st.button("Start Learning 🚀", use_container_width=True):
+            if name and email:
+                st.session_state.logged_in = True
+                st.session_state.user_name = name
+                st.session_state.user_email = email
+                st.rerun()
+            else:
+                st.error("Name & Email Required!")
+    st.stop()
+
+# --- 2. SIDEBAR ---
 with st.sidebar:
-    st.markdown("## AI BUDDY")
-    st.caption("Built by Kishan • 2026")
+    st.markdown(f"### Welcome, {st.session_state.user_name} 👋")
+    st.markdown(f"`{st.session_state.user_email}`")
     st.markdown("---")
-    st.markdown("**MODES**")
-    selected_mode = st.radio("Modes", ["Study Mode - Academics", "Code Buddy - Python / DSA", "Interview Buddy"], label_visibility="collapsed")
-    st.markdown("---")
-    st.markdown("**🎥 TOOLS**")
-    camera_on = st.toggle("📷 Camera On")
-    voice_on = st.toggle("🎙️ Voice Recorder On")
-    st.markdown("---")
-    if st.button(" + New Chat", use_container_width=True):
-        st.session_state.messages=[{"role":"assistant","content":"Hello! I am AI BUDDY built by Maddala Sai Narasinga Kishan. How can I help?"}]
-        st.rerun()
-    st.markdown("**HISTORY**")
-    for chat_id, title, mode, date, messages_json in load_chats()[:8]:
-        if st.button(f"{title[:26]}", key=f"h_{chat_id}", use_container_width=True):
-            st.session_state.messages=json.loads(messages_json); st.rerun()
-    st.markdown("---")
-    st.markdown("**Maddala Sai Narasinga Kishan**")
 
-# VNR VJIET REMOVED FROM IDENTITY
+    mode = st.selectbox("Choose Mode:", ["📚 Study Mode - Academics", "💻 Code Buddy - Python/DSA", "🎯 Interview Buddy"])
+
+    st.markdown("### 📷 Camera & Voice")
+    camera_pic = st.camera_input("Take a photo of your doubt")
+    audio_val = st.audio_input("Record your doubt")
+
+    st.markdown("---")
+    if st.button("🆕 New Chat"):
+        st.session_state.messages = []
+        st.rerun()
+
+    if st.button("🚪 Logout"):
+        st.session_state.logged_in = False
+        st.rerun()
+
+    st.markdown("---")
+    st.caption("© 2026 Developed by Maddala Sai Narasinga Kishan")
+
+# --- 3. IDENTITY & SYSTEM PROMPT (NAME FIX) ---
 BASE_IDENTITY = """
-You are AI BUDDY, created by Maddala Sai Narasinga Kishan.
-CRITICAL: You are NOT OpenAI, NOT ChatGPT. Your creator is ONLY Maddala Sai Narasinga Kishan.
-If asked who invented you, who made you, who created you, nee peru enti, ninnu evaru chesaru,
-you MUST say: "I am AI BUDDY, created by Maddala Sai Narasinga Kishan."
-Never mention OpenAI or any college name.
+You are AI BUDDY.
+You are created ONLY by Maddala Sai Narasinga Kishan in 2026.
+RULE: If user asks "who are you, who made you, who created you, nee peru enti, ninnu evaru chesaru, owner, creator" - You MUST reply: "I am AI BUDDY, Developed by Maddala Sai Narasinga Kishan."
+NEVER say OpenAI, ChatGPT, Meta. Only say AI BUDDY.
+Always answer in simple Telugu + English mix for students.
 """
 
-if "Study" in selected_mode:
-    system_prompt = BASE_IDENTITY + " Study Mode. Explain simply."
-elif "Code" in selected_mode:
-    system_prompt = BASE_IDENTITY + " Code Buddy Mode."
+if mode == "📚 Study Mode - Academics":
+    system_prompt = BASE_IDENTITY + " You are a friendly teacher for Class 1 to B.Tech students. Explain simply with examples."
+elif mode == "💻 Code Buddy - Python/DSA":
+    system_prompt = BASE_IDENTITY + " You are an expert Python and DSA coder. Give clean code with explanation and time complexity."
 else:
-    system_prompt = BASE_IDENTITY + " Interview Buddy Mode."
+    system_prompt = BASE_IDENTITY + " You are an Interview Buddy. Ask HR + Technical questions and give feedback."
 
-st.markdown(f"### {selected_mode}")
-
+# --- 4. CHAT HISTORY ---
 if "messages" not in st.session_state:
-    st.session_state.messages=[{"role":"assistant","content":"Hello! I am AI BUDDY, built by Maddala Sai Narasinga Kishan. Ask me anything from Class 1 to B.Tech. How can I help today?"}]
+    st.session_state.messages = [{"role": "assistant", "content": f"Hello {st.session_state.user_name}! I am AI BUDDY, Developed by Maddala Sai Narasinga Kishan. How can I help you today?"}]
 
 for msg in st.session_state.messages:
-    if msg["role"]=="user": st.markdown(f'<div class="user-bubble">{msg["content"]}</div>', unsafe_allow_html=True)
-    else: st.markdown(f'<div class="bot-bubble">{msg["content"]}</div>', unsafe_allow_html=True)
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-if camera_on:
-    img_file = st.camera_input("Take a picture")
-    if img_file and st.button("Ask about this image"):
-        with st.spinner("Reading image..."):
-            b64 = base64.b64encode(img_file.getvalue()).decode('utf-8')
-            comp = client.chat.completions.create(model=VISION_MODEL, messages=[{"role":"user","content":[{"type":"text","text": BASE_IDENTITY + " Explain this image."},{"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{b64}"}}]}])
-            resp = comp.choices[0].message.content
-            st.session_state.messages.append({"role":"user","content":"[Image] Explain this"}); st.session_state.messages.append({"role":"assistant","content":resp}); st.rerun()
+# --- 5. CHAT LOGIC ---
+if prompt := st.chat_input("Ask your doubt here..."):
 
-voice_prompt = None
-if voice_on:
-    audio_file = st.audio_input("Record your doubt")
-    if audio_file:
-        with st.spinner("Transcribing..."):
-            try:
-                transcription = client.audio.transcriptions.create(file=(audio_file.name, audio_file.getvalue()), model="whisper-large-v3", response_format="text")
-                voice_prompt = transcription; st.success(f"You said: {voice_prompt}")
-            except Exception as e: st.error(f"Voice error: {e}")
-
-prompt = st.chat_input("Ask anything...")
-if voice_prompt: prompt = voice_prompt
-
-if prompt:
-    st.session_state.messages.append({"role":"user","content":prompt})
-    response = None
-    with st.spinner("Thinking..."):
-        for try_model in WORKING_MODELS:
-            try:
-                completion = client.chat.completions.create(model=try_model, messages=[{"role":"system","content":system_prompt}] + st.session_state.messages[-8:], temperature=0.6, max_tokens=1200)
-                response = completion.choices[0].message.content; break
-            except: continue
-    if response:
-        st.session_state.messages.append({"role":"assistant","content":response})
-        if len(st.session_state.messages)==3: save_chat(st.session_state.messages[1]["content"][:35], selected_mode, st.session_state.messages)
+    # FORCE NAME CHECK - This fixes your name issue 100%
+    name_keywords = ["who made you", "who created you", "who invented you", "who are you", "nee peru", "ninnu evaru", "creator", "owner", "built by", "developed by"]
+    if any(word in prompt.lower() for word in name_keywords):
+        response = "I am AI BUDDY, Developed by Maddala Sai Narasinga Kishan. How can I help you today?"
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.messages.append({"role": "assistant", "content": response})
         st.rerun()
-    else:
-        st.error("All models failed. Create new key at console.groq.com/keys")
+
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant"):
+        with st.spinner("AI BUDDY is thinking..."):
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "system", "content": system_prompt}] + [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
+            )
+            response = completion.choices[0].message.content
+            st.markdown(response)
+
+    st.session_state.messages.append({"role": "assistant", "content": response})
