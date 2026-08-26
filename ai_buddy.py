@@ -3,43 +3,91 @@ from groq import Groq
 
 st.set_page_config(page_title="AI BUDDY - by Kishan", page_icon="🤖", layout="wide")
 
-# --- GROQ CLIENT ---
+# --- GROQ ---
 try:
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 except:
-    st.error("GROQ_API_KEY Secrets lo ledu! Streamlit -> Settings -> Secrets lo add chey")
+    st.error("Add GROQ_API_KEY in Secrets!")
     st.stop()
 
-# --- SIDEBAR ---
+# --- 1. LOGIN SYSTEM ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.user_name = ""
+
+if not st.session_state.logged_in:
+    st.markdown("<h1 style='text-align:center'>🤖 AI BUDDY</h1>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align:center'>Developed by Maddala Sai Narasinga Kishan • 2026</h4>", unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        st.subheader("🔐 Login to Continue")
+        name = st.text_input("Enter Your Full Name", placeholder="M.S.N Kishan")
+        email = st.text_input("Enter Your Email", placeholder="kishan@gmail.com")
+        password = st.text_input("Password", type="password", placeholder="Any password - demo login")
+
+        if st.button("Login & Start 🚀", use_container_width=True, type="primary"):
+            if name and email and password:
+                st.session_state.logged_in = True
+                st.session_state.user_name = name
+                st.session_state.user_email = email
+                st.rerun()
+            else:
+                st.error("Please fill all fields!")
+    st.stop()
+
+# --- 2. AFTER LOGIN ---
 with st.sidebar:
-    st.title("🤖 AI BUDDY")
-    st.caption("Developed by Maddala Sai Narasinga Kishan • 2026")
-    mode = st.selectbox("Mode", ["📚 Study Mode", "💻 Code Buddy", "🎯 Interview Buddy"])
-    if st.button("🆕 New Chat"):
+    st.markdown(f"### Welcome, {st.session_state.user_name} 👋")
+    st.caption(f"{st.session_state.user_email}")
+    st.markdown("---")
+    mode = st.selectbox("Select Mode", ["📚 Study Mode", "💻 Code Buddy", "🎯 Interview Buddy"])
+    st.markdown("---")
+    if st.button("🆕 New Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.logged_in = False
+        st.session_state.user_name = ""
+        st.session_state.messages = []
+        st.rerun()
+    st.markdown("---")
+    st.caption("© 2026 Developed by Kishan")
 
-# --- IDENTITY ---
-BASE = "You are AI BUDDY, developed ONLY by Maddala Sai Narasinga Kishan in 2026. If asked who made you, say 'I am AI BUDDY, Developed by Maddala Sai Narasinga Kishan'. Never say OpenAI/ChatGPT."
+# --- 3. SYSTEM PROMPT - ENGLISH ONLY + NAME FIX ---
+BASE = "You are AI BUDDY, developed ONLY by Maddala Sai Narasinga Kishan in 2026. If user asks who made you, who are you, creator, owner, you MUST say 'I am AI BUDDY, Developed by Maddala Sai Narasinga Kishan'. Never say OpenAI or ChatGPT. Always reply in ENGLISH ONLY."
 
-SYSTEM = BASE + " RULE: Always reply ONLY in English. Never use Telugu script. Be friendly and simple."
-    if "messages" not in st.session_state
-    st.session_state.messages = [{"role": "assistant", "content": "Hello m.s.n kishan! I am AI BUDDY, Developed by Maddala Sai Narasinga Kishan. Nee doubt enti?"}]
+if "Study" in mode:
+    SYSTEM_PROMPT = BASE + " You are a friendly teacher. Explain simply in English."
+elif "Code" in mode:
+    SYSTEM_PROMPT = BASE + " You are an expert Python coder. Give clean code."
+else:
+    SYSTEM_PROMPT = BASE + " You are an interview coach."
 
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Show welcome
+if not st.session_state.messages:
+    with st.chat_message("assistant"):
+        st.markdown(f"Hello {st.session_state.user_name}! I am AI BUDDY, Developed by Maddala Sai Narasinga Kishan. How can I help you?")
+
+# Show history
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-# --- CHAT ---
+# --- 4. CHAT LOGIC - WORKING MODEL ---
 if prompt := st.chat_input("Ask your doubt here..."):
 
-    # Name fix
+    # Name force fix
     if any(k in prompt.lower() for k in ["who are you", "who made", "creator", "owner", "ninnu evaru"]):
-        reply = "I am AI BUDDY, Developed by Maddala Sai Narasinga Kishan."
         st.session_state.messages.append({"role": "user", "content": prompt})
-        st.session_state.messages.append({"role": "assistant", "content": reply})
         with st.chat_message("user"): st.markdown(prompt)
+        reply = "I am AI BUDDY, Developed by Maddala Sai Narasinga Kishan."
         with st.chat_message("assistant"): st.markdown(reply)
+        st.session_state.messages.append({"role": "assistant", "content": reply})
         st.stop()
 
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -48,27 +96,24 @@ if prompt := st.chat_input("Ask your doubt here..."):
 
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            # NEW MODELS LIST - Auto fallback
-            models_to_try = [
-                "openai/gpt-oss-20b", # NEW 2026 MODEL - FASTEST
-                "llama-3.3-70b-versatile", # BACKUP 1
-                "openai/gpt-oss-120b" # BACKUP 2
-            ]
-
-            response_text = None
-            for model_name in models_to_try:
+            try:
+                completion = client.chat.completions.create(
+                    model="openai/gpt-oss-20b", # NEW WORKING MODEL
+                    messages=[{"role": "system", "content": SYSTEM_PROMPT}] + st.session_state.messages
+                )
+                resp = completion.choices[0].message.content
+                st.markdown(resp)
+                st.session_state.messages.append({"role": "assistant", "content": resp})
+            except Exception as e:
+                # Fallback model
                 try:
                     completion = client.chat.completions.create(
-                        model=model_name,
-                        messages=[{"role": "system", "content": SYSTEM}] + st.session_state.messages
+                        model="llama-3.3-70b-versatile",
+                        messages=[{"role": "system", "content": SYSTEM_PROMPT}] + st.session_state.messages
                     )
-                    response_text = completion.choices[0].message.content
-                    break # Success ayithe loop nundi bayataki
-                except Exception as e:
-                    continue # Next model try chey
-
-            if response_text:
-                st.markdown(response_text)
-                st.session_state.messages.append({"role": "assistant", "content": response_text})
-            else:
-                st.error("Groq API Key problem bro. console.groq.com ki velli kotha API Key create chesi Secrets lo update chey.")
+                    resp = completion.choices[0].message.content
+                    st.markdown(resp)
+                    st.session_state.messages.append({"role": "assistant", "content": resp})
+                except Exception as e2:
+                    st.error(f"Error: {e2}")
+          
